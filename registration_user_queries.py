@@ -1,9 +1,22 @@
-from firebase_admin import credentials, firestore, initialize_app
+import os
+import firebase_admin
+from firebase_admin import credentials, firestore
+from dotenv import load_dotenv
 
-# Initialize Firebase (only run once)
-cred = credentials.Certificate("firebase_key.json")  # Path to service account JSON file
-initialize_app(cred)
-db = firestore.client()  # Firestore client
+# Load environment variables
+load_dotenv()
+
+# Get Firebase credentials path from environment
+cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+
+if not cred_path:
+    raise ValueError("Firebase credentials not found. Set GOOGLE_APPLICATION_CREDENTIALS in .env.")
+
+# Initialize Firebase
+cred = credentials.Certificate(cred_path)
+firebase_admin.initialize_app(cred)
+db = firestore.client()
+
 collection_name = "users"  # Firestore collection
 
 def create_user(user_data):
@@ -20,8 +33,8 @@ def create_user(user_data):
         if user_data["email"] in existing_emails:
             return {"error": "Email already registered. Please use a different email."}
 
-        # Find the next available user ID
-        new_user_id = max(existing_ids, default=999) + 1  # Start from 1000
+        # Find the next available user ID (starting from 1000)
+        new_user_id = max(existing_ids, default=999) + 1  
 
         if new_user_id > 9999:
             return {"error": "User limit exceeded (ID cannot exceed 9999)"}

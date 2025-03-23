@@ -1,10 +1,10 @@
 from fastapi import APIRouter
 from registration_user_queries import create_user
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 # Define a Pydantic model for request validation
 class User(BaseModel):
-    email: str
+    email: EmailStr  # Ensures valid email format
     name: str
     password: str
     phone: str
