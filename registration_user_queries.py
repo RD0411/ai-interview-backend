@@ -1,10 +1,7 @@
 import os
 import firebase_admin
 from firebase_admin import credentials, firestore
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
 
 # Get Firebase credentials path from environment
 cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
