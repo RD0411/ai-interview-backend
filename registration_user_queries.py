@@ -1,64 +1,39 @@
-import os
-import firebase_admin
-from firebase_admin import credentials, firestore
-from dotenv import load_dotenv
-import json
+def create_user(db, user_data):
+    """
+    Stores user data directly in Firestore with a sequential user ID (starting from 1000) 
+    and returns the generated user ID.
 
-# Load environment variables
-load_dotenv()
+    :param db: Firestore client instance
+    :param user_data: Dictionary containing user information
+    :return: Dictionary with the new user ID or an error message
+    """
+    print("Starting direct user creation process...")
 
-# Get Firebase credentials from environment
-cred_json = os.getenv("FIREBASE_CREDENTIALS")
-if not cred_json:
-    raise ValueError("Firebase credentials not found. Set FIREBASE_CREDENTIALS in .env.")
-try:
-    # Convert the credentials JSON string to a dictionary
-    cred_dict = json.loads(cred_json)
-    cred = credentials.Certificate(cred_dict)  # Load Firebase credentials
-except json.JSONDecodeError:
-    raise ValueError("Invalid JSON format in FIREBASE_CREDENTIALS.")
-
-# Initialize Firebase app
-try:
-    firebase_admin.initialize_app(cred)
-except Exception as e:
-    raise RuntimeError(f"Failed to initialize Firebase app: {e}")
-
-# Firestore client
-db = firestore.client()
-
-# Firestore collection name
-collection_name = "users"
-
-def create_user(user_data):
-    """Stores user data in Firestore with a unique email and returns the generated user ID."""
     try:
-        # Get all existing user documents
-        users_ref = db.collection(collection_name).get()
+        # Step 1: Generate a unique user ID based on document count + 1000
+        print("Attempting to fetch user count from Firestore...")
+        
+        # Fetch all documents, limit to 1 if you just want to check accessibility
+        docs = db.collection("users").get()
+        user_count = len(docs)  # Count documents directly
+        
+        print(f"Successfully retrieved user count: {user_count} users found.")
 
-        # Extract existing user IDs and emails
-        existing_ids = [int(user.id) for user in users_ref if user.id.isdigit()]
-        existing_emails = {user.to_dict().get("email") for user in users_ref}
+        # Generate the next user ID (starting from 1000)
+        next_user_id = 1000 + user_count
+        user_id = str(next_user_id)
+        print(f"Generated user ID: {user_id}")
 
-        # Check if email is already registered
-        if user_data["email"] in existing_emails:
-            return {"error": "Email already registered. Please use a different email."}
-
-        # Find the next available user ID (starting from 1000)
-        new_user_id = max(existing_ids, default=999) + 1  
-
-        if new_user_id > 9999:
-            return {"error": "User limit exceeded (ID cannot exceed 9999)"}
-
-        # Convert user ID to a string
-        user_id = str(new_user_id)
-
-        # Store data in Firestore under users -> user_id -> {user data}
-        user_ref = db.collection(collection_name).document(user_id)
+        # Step 2: Store user data in Firestore
+        print(f"Storing user data in Firestore with ID: {user_id}")
+        user_ref = db.collection("users").document(user_id)
         user_ref.set(user_data)
+        print("User data stored successfully in Firestore.")
 
+        # Return the generated user ID and data as a response
         return {"id": user_id, "data": user_data}
 
     except Exception as e:
-        # Log the error and return a user-friendly message
+        # Log the exact error for debugging purposes
+        print(f"An error occurred while creating the user: {str(e)}")
         return {"error": f"An error occurred while creating the user: {str(e)}"}
