@@ -6,5 +6,6 @@ app = FastAPI()
 
 # Include the user controller
 app.include_router(user_router)
-
-# Run the server with: uvicorn registration_main:app --reload
+@app.get("/")
+def home():
+    return {"message": "API is running!"}
