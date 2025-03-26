@@ -1,16 +1,26 @@
 import os
 import firebase_admin
 from firebase_admin import credentials, firestore
+from dotenv import load_dotenv
 
+# Load environment variables
+load_dotenv()
 
 # Get Firebase credentials path from environment
-cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+import json
+
+cred_json = os.getenv("FIREBASE_CREDENTIALS")
+if not cred_json:
+    raise ValueError("Firebase credentials not found.")
+
+cred_dict = json.loads(cred_json)  # Convert string to dictionary
+cred = credentials.Certificate(cred_dict)  # Load Firebase credentials
+
 
 if not cred_path:
     raise ValueError("Firebase credentials not found. Set GOOGLE_APPLICATION_CREDENTIALS in .env.")
 
-# Initialize Firebase
-cred = credentials.Certificate(cred_path)
+
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
