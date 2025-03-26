@@ -2,29 +2,33 @@ import os
 import firebase_admin
 from firebase_admin import credentials, firestore
 from dotenv import load_dotenv
+import json
 
 # Load environment variables
 load_dotenv()
 
-# Get Firebase credentials path from environment
-import json
-
+# Get Firebase credentials from environment
 cred_json = os.getenv("FIREBASE_CREDENTIALS")
 if not cred_json:
-    raise ValueError("Firebase credentials not found.")
+    raise ValueError("Firebase credentials not found. Set FIREBASE_CREDENTIALS in .env.")
+try:
+    # Convert the credentials JSON string to a dictionary
+    cred_dict = json.loads(cred_json)
+    cred = credentials.Certificate(cred_dict)  # Load Firebase credentials
+except json.JSONDecodeError:
+    raise ValueError("Invalid JSON format in FIREBASE_CREDENTIALS.")
 
-cred_dict = json.loads(cred_json)  # Convert string to dictionary
-cred = credentials.Certificate(cred_dict)  # Load Firebase credentials
+# Initialize Firebase app
+try:
+    firebase_admin.initialize_app(cred)
+except Exception as e:
+    raise RuntimeError(f"Failed to initialize Firebase app: {e}")
 
-
-if not cred_path:
-    raise ValueError("Firebase credentials not found. Set GOOGLE_APPLICATION_CREDENTIALS in .env.")
-
-
-firebase_admin.initialize_app(cred)
+# Firestore client
 db = firestore.client()
 
-collection_name = "users"  # Firestore collection
+# Firestore collection name
+collection_name = "users"
 
 def create_user(user_data):
     """Stores user data in Firestore with a unique email and returns the generated user ID."""
@@ -56,4 +60,5 @@ def create_user(user_data):
         return {"id": user_id, "data": user_data}
 
     except Exception as e:
-        return {"error": str(e)}
+        # Log the error and return a user-friendly message
+        return {"error": f"An error occurred while creating the user: {str(e)}"}
